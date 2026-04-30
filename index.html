@@ -212,63 +212,39 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .btn-er:hover{background:#d62f24}
 .btn-er:disabled{opacity:.4;cursor:not-allowed}
 
-/* ═══════════════════════════════════════
-   RESPONSIVE MOBILE
-═══════════════════════════════════════ */
+/* RESPONSIVE MOBILE */
 @media (max-width:640px){
   html,body{overflow:hidden}
-
-  /* Header */
   .hdr{padding:0 14px;height:52px}
   .brand-sub{display:none}
   .hdr-nav{display:none}
   .clock{font-size:11px;letter-spacing:.5px}
   .chip{padding:3px 8px;font-size:10px}
-
-  /* Metrics scroll horizontal */
   .metrics{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:0 10px;height:48px}
   .metrics::-webkit-scrollbar{display:none}
   .metric{padding:0 11px}
   .mval{font-size:16px}
   .mlbl{font-size:9px}
   .mdiv{height:20px}
-
-  /* Monitoring: single column, scrollable */
-  .grid{
-    grid-template-columns:1fr;gap:10px;
-    padding:10px 12px;overflow-y:auto;overflow-x:hidden;
-  }
+  .grid{grid-template-columns:1fr;gap:10px;padding:10px 12px;overflow-y:auto;overflow-x:hidden;}
   .grid > .card:first-child{min-height:260px;max-height:44vh}
   .rcol{flex-direction:row;gap:10px;overflow:visible}
   .ucard,.bcard{flex:1;min-height:190px;max-height:36vh}
-
-  /* Daftar tab: kamera di atas form */
   .reg{grid-template-columns:1fr;gap:14px;padding:14px 12px}
   .cam-sec{order:-1}
   .cam-wrap{border-radius:16px}
   .fgrid{grid-template-columns:1fr 1fr}
-
-  /* Finger-friendly */
   .udel{width:32px;height:32px;font-size:13px;border-radius:8px}
   .btn-pri{padding:14px;font-size:15px;border-radius:14px}
   .finp,.fsel{padding:12px 13px;font-size:15px;border-radius:10px}
   .bi{padding:10px 12px}
-
-  /* Modal bottom sheet */
   .mbd{align-items:flex-end}
-  .modal{
-    border-radius:20px 20px 0 0;margin:0;max-width:100%;
-    animation:mob-slide .3s var(--spring);
-  }
+  .modal{border-radius:20px 20px 0 0;margin:0;max-width:100%;animation:mob-slide .3s var(--spring);}
   @keyframes mob-slide{from{transform:translateY(100%)}to{transform:translateY(0)}}
-  .modal::before{
-    content:'';display:block;width:36px;height:4px;
-    background:var(--border-2);border-radius:2px;margin:10px auto 0;
-  }
+  .modal::before{content:'';display:block;width:36px;height:4px;background:var(--border-2);border-radius:2px;margin:10px auto 0;}
   .del-modal{padding:16px 20px 36px;border-radius:20px 20px 0 0;max-width:100%}
 }
 
-/* Tablet */
 @media (min-width:641px) and (max-width:900px){
   .hdr{padding:0 16px}
   .hdr-nav .nav-btn{padding:5px 10px;font-size:12px}
@@ -417,11 +393,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 <script>
 'use strict';
 
-const ESP_IP = '192.168.35.38';
-const SRV_IP = '192.168.35.212';
-const ESP    = 'http://' + ESP_IP + ':82';
-const SRV    = 'http://' + SRV_IP + ':5000';
-const STREAM = 'http://' + SRV_IP + ':5000/video';
+const ESP    = 'http://192.168.35.38:82';
+const SRV    = 'https://coasting-pursuable-stapling.ngrok-free.dev';
+const STREAM = 'https://coasting-pursuable-stapling.ngrok-free.dev/video';
 
 let fc = 0, delKey = null;
 let sedangDaftar = false;
@@ -654,7 +628,6 @@ async function daftar() {
   btn.disabled = true; btn.textContent = '⏳ Mendaftarkan…';
   document.getElementById('progLog').innerHTML = '';
 
-  // Pause stream di server
   try { await fetch(SRV + '/api/stream/pause', { method:'POST' }); } catch {}
 
   setBannerDaftar(true);
@@ -671,7 +644,6 @@ async function daftar() {
     if (d.ok) {
       logProg('ESP32 memulai pengambilan 5 foto…', 'ok');
       setProgress(15, 'Mengambil foto — wajah tidak terdeteksi akan dilewati…');
-      // Setelah ~12 detik (5 foto × 1.5s + proses), progress akan diupdate via SSE
       setTimeout(() => {
         if (sedangDaftar) setProgress(80, 'Menunggu konfirmasi server…');
       }, 12000);
@@ -710,7 +682,6 @@ function sseConnect() {
       const { tipe, data, timestamp } = JSON.parse(e.data);
       if (tipe === 'ping') return;
 
-      // ── INIT ──
       if (tipe === 'init') {
         if (data.statistik) updateStats(data.statistik);
         renderChain(data.rantai, data.valid);
@@ -718,34 +689,28 @@ function sseConnect() {
         return;
       }
 
-      // ── Feed untuk SEMUA event ──
       addFeed(tipe, data, timestamp);
 
-      // ── Update statistik ──
       if (data.statistik) updateStats(data.statistik);
 
-      // ── Refresh blockchain jika perlu ──
       if (['daftar_selesai','pengguna_dihapus','akses_berhasil','akses_ditolak'].includes(tipe)) {
         refreshChain();
       }
 
-      // ── Update users ──
       if (data.pengguna) renderUsers(data.pengguna);
       else if (['daftar_selesai','pengguna_dihapus'].includes(tipe)) loadUsers();
 
-      // ── Progress foto ──
       if (tipe === 'daftar_proses' && data.nomor_foto != null) {
         const pct = 15 + (data.nomor_foto / 5) * 65;
         setProgress(pct, data.pesan || '');
         logProg(data.pesan, data.ok ? 'ok' : 'er');
       }
 
-      // ── Pendaftaran selesai ──
       if (tipe === 'daftar_selesai') {
         setProgress(100, '✓ Pendaftaran Selesai — stream diaktifkan kembali');
         logProg((data.nama||'') + ' berhasil terdaftar!', 'ok');
         setBannerDaftar(false);
-        camStart();   // refresh stream
+        camStart();
         setTimeout(() => {
           document.getElementById('rNama').value  = '';
           document.getElementById('rKelas').value = '';

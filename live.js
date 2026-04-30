@@ -4,9 +4,8 @@
 
   'use strict';
 
-  const SRV_IP   = '192.168.35.212';
-  const SRV      = `http://${SRV_IP}:5000`;
-  const STREAM   = `http://${SRV_IP}:5000/video`;
+  const SRV      = 'https://coasting-pursuable-stapling.ngrok-free.dev';
+  const STREAM   = 'https://coasting-pursuable-stapling.ngrok-free.dev/video';
   const THRESHOLD = 45;
   const MAX_CONF  = 150;
 
